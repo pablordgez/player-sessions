@@ -38,11 +38,5 @@ namespace player_sessions.Server
                 Debug.WriteLine("Tried to remove player, but player was never added");
             }
         }
-
-        [Command("hello_server")]
-        public void HelloServer()
-        {
-            Debug.WriteLine("Sure, hello.");
-        }
     }
 }
