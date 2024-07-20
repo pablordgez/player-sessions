@@ -7,14 +7,43 @@ using static CitizenFX.Core.Native.API;
 
 namespace player_sessions.Server
 {
-    public class SessionManager
+    public class SessionManager : BaseScript
     {
         ServerSession defaultSession = new ServerSession("Free mode", false, 1);
 
+
+        List<PlayerSession> playerSessions;
         List<(Player, Session)> playerList;
         public SessionManager()
         {
             playerList = new List<(Player, Session)>();
+            playerSessions = new List<PlayerSession>();
+        }
+
+        public string CreateSession([FromSource]Player player, int sessionId, bool open, bool passive, string password)
+        {
+            if(playerSessions.Find((s) => s.SessionId == sessionId) != null)
+            {
+                return "A session with this id already exists";
+            }
+            else
+            {
+                if (open)
+                {
+                    PlayerSession session = new PlayerSession(player, passive, sessionId);
+                    playerSessions.Add(session);
+                    SetPlayerSession(player, session, password);
+                }
+                else
+                {
+                    PlayerSession session = new PlayerSession(password, player, passive, sessionId);
+                    playerSessions.Add(session);
+                    SetPlayerSession(player, session, password);
+                }
+                return "Session created succesfully, moving player to new session...";
+                
+                
+            }
         }
 
         public bool AddPlayer(Player player)
@@ -35,22 +64,32 @@ namespace player_sessions.Server
             return playerList.Remove(playerList.Find(t => t.Item1 == player));
         }
 
-        public bool SetPlayerSession(Player player, ServerSession session)
+        public bool SetPlayerSession(Player player, Session session, string password)
         {
-            Session currentSession = playerList.Find(t => t.Item1 == player).Item2;
-            if(currentSession is PlayerSession)
+            if (session is PlayerSession)
             {
-                PlayerSession playerSession = (PlayerSession)currentSession;
-                if(playerSession.Host == player)
+                if (!((PlayerSession)session).Open)
                 {
-                    List<Player> playersInSession = playerList.FindAll(t => t.Item2 == playerSession).Select(t => t.Item1).ToList();
-                    foreach(Player p in  playersInSession)
+                    if (!password.Equals(((PlayerSession)session).Password))
                     {
-                        SetPlayerSession(p, defaultSession);
+                        return false;
                     }
                 }
-                
-                for(int i = 0; i < playerList.Count; i++)
+            }
+            Session currentSession = playerList.Find(t => t.Item1 == player).Item2;
+            if (currentSession is PlayerSession)
+            {
+                PlayerSession playerSession = (PlayerSession)currentSession;
+                if (playerSession.Host == player)
+                {
+                    List<Player> playersInSession = playerList.FindAll(t => t.Item2 == playerSession).Select(t => t.Item1).ToList();
+                    foreach (Player p in playersInSession)
+                    {
+                        SetPlayerSession(p, defaultSession, "");
+                    }
+                }
+
+                for (int i = 0; i < playerList.Count; i++)
                 {
                     if (playerList[i].Item1 == player)
                     {
@@ -64,7 +103,7 @@ namespace player_sessions.Server
                 session.AddPlayer(player);
                 return true;
 
-                
+
             }
             else
             {
@@ -81,6 +120,7 @@ namespace player_sessions.Server
                 session.AddPlayer(player);
                 return true;
             }
+
         }
     }
 }

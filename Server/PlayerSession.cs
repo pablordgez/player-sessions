@@ -32,5 +32,15 @@ namespace player_sessions.Server
         {
             get { return host; }
         }
+
+        public bool Open
+        {
+            get { return open; }
+        }
+
+        public string Password
+        { 
+            get { return password; } 
+        }
     }
 }
