@@ -12,6 +12,7 @@ namespace player_sessions.Server
         {
             EventHandlers["playerConnecting"] += new Action<Player, string, dynamic, dynamic>(OnPlayerConnecting);
             EventHandlers["playerDropped"] += new Action<Player, string>(OnPlayerDropped);
+            EventHandlers["createSession"] += new Action<Player, int, bool, bool, string>(CreateSession);
             playerManager = new SessionManager();
             
         }
@@ -29,6 +30,21 @@ namespace player_sessions.Server
 
             deferrals.done();
         }
+
+        private void CreateSession([FromSource]Player player, int sessionId, bool open, bool passive, string password)
+        {
+            if(!open && string.IsNullOrEmpty(password))
+            {
+                Debug.WriteLine("Tried to create private session without password");
+            }
+            else
+            {
+                string result = playerManager.CreateSession(player, sessionId, open, passive, password);
+                TriggerClientEvent("receiveSessionCreationResult", result);
+            }
+        }
+
+        
 
         private void OnPlayerDropped([FromSource] Player player, string reason)
         {

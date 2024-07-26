@@ -20,7 +20,7 @@ namespace player_sessions.Server
             playerSessions = new List<PlayerSession>();
         }
 
-        public string CreateSession([FromSource]Player player, int sessionId, bool open, bool passive, string password)
+        public string CreateSession(Player player, int sessionId, bool open, bool passive, string password)
         {
             if(playerSessions.Find((s) => s.SessionId == sessionId) != null)
             {
