@@ -9,20 +9,23 @@ namespace player_sessions.Server
 {
     public class SessionManager : BaseScript
     {
-        ServerSession defaultSession = new ServerSession("Free mode", false, 1);
+        ServerSession defaultSession;
 
 
         List<PlayerSession> playerSessions;
+        List<ServerSession> serverSessions;
         List<(Player, Session)> playerList;
         public SessionManager()
         {
             playerList = new List<(Player, Session)>();
             playerSessions = new List<PlayerSession>();
+            defaultSession = new ServerSession("Free mode", false, 1);
+            serverSessions.Add(defaultSession);
         }
 
         public string CreateSession(Player player, int sessionId, bool open, bool passive, string password)
         {
-            if(playerSessions.Find((s) => s.SessionId == sessionId) != null)
+            if(playerSessions.Find((s) => s.SessionId == sessionId) != null || serverSessions.Find((s) => s.SessionId == sessionId) != null)
             {
                 return "A session with this id already exists";
             }
@@ -64,14 +67,39 @@ namespace player_sessions.Server
             return playerList.Remove(playerList.Find(t => t.Item1 == player));
         }
 
-        public bool SetPlayerSession(Player player, Session session, string password)
+        private Session GetSessionFromId(int id)
+        {
+            Session session = playerSessions.Find((s) => s.SessionId == id);
+            if(session == null)
+            {
+                session = serverSessions.Find((s) => s.SessionId == id);
+            }
+
+            return session;
+        }
+
+        public void SetPlayerSession(Player player, int sessionId, string password)
+        {
+            Session session = GetSessionFromId(sessionId);
+            if(session == null)
+            {
+                TriggerClientEvent(player, "playerSessionsReceiveServerMessage", "There is no session with the specified id");
+            }
+            else
+            {
+                SetPlayerSession(player, session, password);
+            }
+        }
+
+        private bool SetPlayerSession(Player player, Session session, string password)
         {
             if (session is PlayerSession)
             {
                 if (!((PlayerSession)session).Open)
                 {
-                    if (!password.Equals(((PlayerSession)session).Password))
+                    if (password != ((PlayerSession)session).Password)
                     {
+                        TriggerClientEvent(player, "playerSessionsReceiveServerMessage", "Incorrect password");
                         return false;
                     }
                 }
@@ -101,6 +129,7 @@ namespace player_sessions.Server
 
                 SetPlayerRoutingBucket(player.Handle, session.SessionId);
                 session.AddPlayer(player);
+                TriggerClientEvent(player, "playerSessionsReceiveServerMessage", "Successfully changed session");
                 return true;
 
 
@@ -118,6 +147,7 @@ namespace player_sessions.Server
 
                 SetPlayerRoutingBucket(player.Handle, session.SessionId);
                 session.AddPlayer(player);
+                TriggerClientEvent(player, "playerSessionsReceiveServerMessage", "Successfully changed session");
                 return true;
             }
 

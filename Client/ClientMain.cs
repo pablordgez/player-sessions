@@ -12,7 +12,7 @@ namespace player_sessions.Client
         public ClientMain()
         {
             EventHandlers["onClientResourceStart"] += new Action<string>(OnClientResourceStart);
-            EventHandlers["receiveSessionCreationResult"] += new Action<string>(ReceiveSessionCreationResults);
+            EventHandlers["playerSessionsReceiveServerMessage"] += new Action<string>(ReceiveServerMessage);
         }
 
         private void OnClientResourceStart(string resource)
@@ -23,6 +23,41 @@ namespace player_sessions.Client
             }
             else
             {
+
+                RegisterCommand("changeSession", new Action<int, List<object>, string>((source, args, rawCommand) => 
+                {
+                    dynamic resultMessage = new ExpandoObject();
+                    resultMessage.args = new string[2];
+                    resultMessage.args[0] = "Server";
+                    if (args.Count == 0)
+                    {
+                        resultMessage.args[1] = "Not enough arguments";
+                        TriggerEvent("chat:addMessage", resultMessage);
+                        return;
+                    } else
+                    {
+                        int id;
+                        try
+                        {
+                            id = int.Parse(args[0].ToString());
+                        }
+                        catch (Exception)
+                        {
+                            resultMessage.args[1] = "The number isn't valid";
+                            resultMessage.color = new int[] { 255, 0, 0 };
+                            TriggerEvent("chat:addMessage", resultMessage);
+                            return;
+                        }
+                        string password = "";
+                        if (args.Count == 2) { 
+                            password = args[1].ToString();
+                        }
+                        TriggerServerEvent("changeSession", id, password);
+                    }
+                }), false);
+
+
+
                 RegisterCommand("createSession", new Action<int, List<object>, string>((source, args, rawCommand) =>
                 {
 
@@ -94,12 +129,13 @@ namespace player_sessions.Client
 
         }
 
-        private void ReceiveSessionCreationResults(string message)
+        private void ReceiveServerMessage(string message)
         {
             dynamic chatMessage = new ExpandoObject();
             chatMessage.args = new string[2] { "Server", message };
             chatMessage.color = new int[] { 255, 255, 255 };
             TriggerEvent("chat:addMessage", chatMessage);
         }
+
     }
 }

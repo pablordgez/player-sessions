@@ -13,6 +13,7 @@ namespace player_sessions.Server
             EventHandlers["playerConnecting"] += new Action<Player, string, dynamic, dynamic>(OnPlayerConnecting);
             EventHandlers["playerDropped"] += new Action<Player, string>(OnPlayerDropped);
             EventHandlers["createSession"] += new Action<Player, int, bool, bool, string>(CreateSession);
+            EventHandlers["changeSession"] += new Action<Player, int, string>(ChangeSession);
             playerManager = new SessionManager();
             
         }
@@ -31,6 +32,11 @@ namespace player_sessions.Server
             deferrals.done();
         }
 
+        private void ChangeSession([FromSource]Player player, int sessionId, string password)
+        {
+            playerManager.SetPlayerSession(player, sessionId, password);
+        }
+
         private void CreateSession([FromSource]Player player, int sessionId, bool open, bool passive, string password)
         {
             if(!open && string.IsNullOrEmpty(password))
@@ -40,7 +46,7 @@ namespace player_sessions.Server
             else
             {
                 string result = playerManager.CreateSession(player, sessionId, open, passive, password);
-                TriggerClientEvent("receiveSessionCreationResult", result);
+                TriggerClientEvent(player, "playerSessionsReceiveServerMessage", result);
             }
         }
 
