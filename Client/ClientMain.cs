@@ -29,7 +29,14 @@ namespace player_sessions.Client
                     dynamic resultMessage = new ExpandoObject();
                     resultMessage.args = new string[2];
                     resultMessage.args[0] = "Server";
-                    if (args.Count == 3)
+                    if (args.Count < 3)
+                    {
+                        resultMessage.args[1] = "Not enough arguments";
+                        resultMessage.color = new int[] { 255, 0, 0 };
+                        TriggerEvent("chat:addMessage", resultMessage);
+                        return;
+                    }
+                    else
                     {
                         int id;
                         try
@@ -45,13 +52,25 @@ namespace player_sessions.Client
                         }
 
 
+                        string password = "";
+
                         if (args[1].ToString().ToLower() != "true")
                         {
-
-                            resultMessage.args[1] = "You need to specify a password if you don't want to make the session open";
-                            resultMessage.color = new int[] { 255, 0, 0 };
-                            TriggerEvent("chat:addMessage", resultMessage);
-                            return;
+                            if (args.Count == 3)
+                            {
+                                resultMessage.args[1] = "You need to specify a password if you don't want to make the session open";
+                                resultMessage.color = new int[] { 255, 0, 0 };
+                                TriggerEvent("chat:addMessage", resultMessage);
+                                return;
+                            }
+                            else if (args[1].ToString().ToLower() == "false")
+                            {
+                                password = args[3].ToString();
+                            }
+                            else
+                            {
+                                resultMessage.args[1] = "The open option specified isn't valid";
+                            }
                         }
 
 
@@ -63,12 +82,9 @@ namespace player_sessions.Client
                             return;
                         }
 
+                        bool open = bool.Parse(args[1].ToString());
                         bool passive = bool.Parse(args[2].ToString());
-                        TriggerServerEvent("createSession", id, bool.Parse(args[1].ToString()), bool.Parse(args[2].ToString()));
-
-
-
-
+                        TriggerServerEvent("createSession", id, open, passive, password);
 
 
                     }
